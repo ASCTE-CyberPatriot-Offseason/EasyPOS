@@ -22,8 +22,14 @@ def removeItem():
     removeItem = True
     while removeItem == True:
         print(f"This is your current order: \n{order}")
-        remove = int(input("What is the index of the item you want to remove? ")) # Make input system better
-        order.pop(remove)
+        remove = input("Which item do you want to remove? ")
+        count = 0
+        for item in order:
+            if item == remove:
+                order.pop(count)
+                break
+            count += 1
+        print(f"This is your current order: \n{order}")
         removeAgain = input("Would you like to remove something else? ")
         if removeAgain != "yes":
             removeItem = False
