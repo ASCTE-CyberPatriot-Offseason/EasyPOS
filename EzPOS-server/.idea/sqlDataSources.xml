@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="DdlMappings">
+    <mapping uuid="4a00ed71-ed27-4f09-8c19-b760d3a8aa87" name="menu_items Mapping">
+      <data-sources db="db6fb04a-7654-4bff-9a36-7144d28ee0e7" />
+    </mapping>
+    <mapping uuid="bf3e1c9d-b66f-4353-b2aa-bb5570c44cb7" name="datb@localhost Mapping">
+      <data-sources db="ee0beaf1-457a-4fda-9d73-e01067b6ee90" ddl="72d7011d-6b68-402a-9bfc-d966ef2237d4" />
+    </mapping>
+  </component>
+</project>
