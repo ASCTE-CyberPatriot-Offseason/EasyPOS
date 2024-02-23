@@ -18,6 +18,7 @@ def addItem():
         if orderAgainYN != "yes":
             orderAgain = False
 
+
 def removeItem():
     removeItem = True
     while removeItem == True:
@@ -33,6 +34,7 @@ def removeItem():
         removeAgain = input("Would you like to remove something else? ")
         if removeAgain != "yes":
             removeItem = False
+
 
 print()
 print("  MENU")
