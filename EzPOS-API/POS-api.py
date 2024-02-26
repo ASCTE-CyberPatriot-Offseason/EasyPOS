@@ -1,49 +1,76 @@
-from flask import Flask, request
+from flask import Flask
 from flask_restful import Resource, Api
-from flask_restful import reqparse
+import sqlite3
 
-#Initialise the flask class and the API libarary 
-#Always include the following two lines of code
+
+# Initialise the flask class and the API libarary
+# Always include the following two lines of code
 app = Flask(__name__)
 api = Api(app)
 
-rms ={
-    'restaurant' : {'name' : 'KFC', 'Phone Number' : '123-456-7890','address' : 'god help me lane' },
-    'menu' : {
-        'wings' : {'price' : '10.99', 'quantity_remaining' : '10'},
-        'fries' : {'price' : '3.99', 'quantity_remaining' : '20'},
-        'drink' : {'price' : '1.99', 'quantity_remaining' : '50'}
-    }
+rms = {
+    "restaurant": {
+        "name": "Restaurant Name",
+        "Phone Number": "123-456-7890",
+        "address": "1 Example Street",
+    },
+    "menu": {},
+}
+menu_item_payload = {
+    "name": "New Item",
+    "uid": 123456,
+    "description": "Sample description",
+    "category_id": 1,
+    "price": 9.99,
+    "image_url": "https://example.com/image.jpg",
+    "active": 1,
 }
 
-class restaurant(Resource):
+
+class Restaurant(Resource):
+    """
+    Retrieve restaurant information.
+    """
+
     def get(self):
-        return rms['restaurant']
-    
-class menu(Resource):
-    def get(self, item):
+        """
+        Retrieve the restaurant information.
+        """
+        return rms["restaurant"]
+
+
+class Menu(Resource):
+    """
+    Retrieve menu item information.
+    """
+
+    def sync(self):
+        """
+        Retrieve the entire menu.
+
+        Returns:
+        - dict: The menu items.
+        """
         try:
-            return rms['menu'][item]
+            return rms["menu"]
         except KeyError:
-            return{}
-    def put(self, item):
+            return {}
+
+    def synci(self, item):
+        """
+        Synchronize the item with the menu.
+
+        Args:
+            item (str): The item to synchronize.
+
+        Returns:
+            dict: A dictionary containing an error message if the item is not on the menu.
+        """
         try:
-            rms['menu'][item]
+            return rms["menu"][item]
         except KeyError:
-            return {f'Error{item} is not on the menu'}
-        
-        parser = reqparse.RequestParser()
-        parser.add_argument('price')
-        parser.add_argument('quantity_remaining')
-        result = parser.parse_args()
-        print(result)
-
-#Mapping classes to different end points
-api.add_resource(restaurant, '/restaurant')
-api.add_resource(menu, '/menu/<item>')
-
-#Starting the server
-if __name__ == '__main__':
-    app.run(debug=True)
+            return {f"Error{item} is not on the menu"}
 
 
+api.add_resource(Restaurant, "/restaurant")
+api.add_resource(Menu, "/menu/<item>")
