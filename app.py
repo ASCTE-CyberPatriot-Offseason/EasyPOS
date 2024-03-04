@@ -116,21 +116,26 @@ def login_post():
         users = query_db("SELECT * FROM users WHERE username = ?", (username,))
         if users:
             user = users[0]
-            print(user)
+            print(users[0])
         else:
+            print("Incorrect username/password")
             flash("Please check your login details and try again.")
             return render_template("login.html")
 
         if not check_password_hash(user["password"], password):
+            print("Password is incorrect")
             flash("Please check your login details and try again.")
             return render_template("login.html")
 
         # If the above check passes, then we know the user has the right credentials
         if 'id' in user:
             session['user_id'] = user['id']
+            print('id')
         elif 'user_id' in user:
+            print('user_id')
             session['user_id'] = user['user_id']
     else:
+        print("User not found")
         return render_template("login.html")
 
 # If the above check passes, then we know the user has the right credentials
