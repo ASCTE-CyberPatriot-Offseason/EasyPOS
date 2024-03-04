@@ -15,8 +15,24 @@ from flask_login import LoginManager, login_user, UserMixin
 import os
 
 
+
+DATABASE = "identifier.sqlite"
+app = Flask(__name__)
+app.secret_key = "secret key"
+os.makedirs(app.instance_path, exist_ok=True)
+app.config["DATABASE"] = os.path.join(
+    app.instance_path,
+    "identifier.sqlite",
+)
+api = Api(app)
+login_manager = LoginManager()
+login_manager.init_app(app)
+
+
 def get_db():
     if "db" not in g:
+        print("Instance path:", app.instance_path)
+        print("Database path:", app.config["DATABASE"])
         g.db = sqlite3.connect(
             current_app.config["DATABASE"], detect_types=sqlite3.PARSE_DECLTYPES
         )
@@ -30,17 +46,6 @@ def close_db(e=None):
     if db is not None:
         db.close()
 
-
-DATABASE = "identifier.sqlite"
-app = Flask(__name__)
-app.secret_key = "secret key"
-app.config["DATABASE"] = os.path.join(
-    app.instance_path,
-    r"/identifier.sqlite",
-)
-api = Api(app)
-login_manager = LoginManager()
-login_manager.init_app(app)
 
 
 @app.route("/")
