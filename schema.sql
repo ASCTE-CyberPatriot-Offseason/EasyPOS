@@ -64,6 +64,7 @@ CREATE TABLE IF NOT EXISTS users (
   password TEXT NOT NULL,
   role TEXT DEFAULT 'cashier'
 );
+INSERT INTO users (username, password, role) VALUES ('admin', 'admin', 'admin');
 
 CREATE TABLE IF NOT EXISTS flags (
   flag_name TEXT PRIMARY KEY,

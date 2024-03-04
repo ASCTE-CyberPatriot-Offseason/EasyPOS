@@ -1,3 +1,4 @@
+from math import e, log
 import sqlite3
 from flask import (
     Flask,
@@ -11,7 +12,7 @@ from flask import (
 )
 from flask_restful import Api
 from werkzeug.security import generate_password_hash, check_password_hash
-from flask_login import LoginManager, login_user, UserMixin
+from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 import os
 
 
@@ -28,16 +29,12 @@ api = Api(app)
 login_manager = LoginManager()
 login_manager.init_app(app)
 
-
 def get_db():
-    if "db" not in g:
-        print("Instance path:", app.instance_path)
-        print("Database path:", app.config["DATABASE"])
-        g.db = sqlite3.connect(
-            current_app.config["DATABASE"], detect_types=sqlite3.PARSE_DECLTYPES
-        )
-        g.db.row_factory = sqlite3.Row
-    return g.db
+    db = getattr(g, '_database', None)
+    if db is None:
+        db = g._database = sqlite3.connect(DATABASE)
+        db.row_factory = sqlite3.Row  # Add this line
+    return db
 
 
 def close_db(e=None):
@@ -49,32 +46,41 @@ def close_db(e=None):
 
 
 @app.route("/")
-def login():
-    return render_template("login.html")
+def index():
+    first_start = query_db("SELECT stat FROM flags WHERE flag_name = 'first_start'", one=True)
+    if first_start and first_start['stat'] == 'true':
+        return redirect(url_for("register_post"))
+    else:
+        return redirect(url_for("login_post"))
 
 
 class User(UserMixin):
     def __init__(self, id):
         self.id = id
 
+    def get_id(self):
+        return unicode(self.id)
+
+#PRIORITY Add error handling for duplicate usernames
 @app.route("/register", methods=["GET", "POST"])
 def register_post():
     # Check if the app has been started for the first time
     first_start = query_db("SELECT stat FROM flags WHERE flag_name = 'first_start'", one=True)
-    if first_start and first_start['value'] == 'true':
+    if first_start and first_start['stat'] == 'true':
         if request.method == "POST":
             username = request.form.get("username")
             password = request.form.get("password")
-            hashed_password = generate_password_hash(password, method='sha256')
-
+            hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
+            db = get_db()
+            db.execute("INSERT INTO users (username, password) VALUES (?, ?)", (username, hashed_password))
             # Store the username and hashed_password in the database
             # ...
 
             # Set the 'first_start' flag to 'false'
-            get_db().execute("UPDATE flags SET stat = 'false' WHERE name = 'first_start'")
+            # get_db().execute("UPDATE flags SET stat = 'false' WHERE flag_name = 'first_start'")
             get_db().commit()
 
-            return redirect(url_for("login"))
+            return redirect(url_for("login_post"))
     else:
         # If the app has been started before, check if the user is an admin or manager
         user = query_db("SELECT * FROM users WHERE id = ?", (current_user.id,), one=True)
@@ -87,33 +93,45 @@ def register_post():
                 # Store the username and hashed_password in the database
                 # ...
 
-                return redirect(url_for("login"))
+                return redirect(url_for("login_post"))
         else:
             # If the user is not an admin or manager, redirect them to the login page
-            return redirect(url_for("login"))
+            return redirect(url_for("login_post"))
 
     return render_template("register.html")
 
 @login_manager.user_loader
 def load_user(user_id):
-    return User(user_id)
+    user = query_db("SELECT * FROM users WHERE id = ?", (user_id,), one=True)
+    if user:
+        return User(user_id)
+    return None
 
-@app.route("/login", methods=["POST"])
+@app.route("/login", methods=["GET","POST"])
 def login_post():
-    username = request.form.get("username")
-    password = request.form.get("password")
+    if request.method == "POST":
+        username = request.form.get("username")
+        password = request.form.get("password")
 
-    user = query_db("SELECT * FROM users WHERE username = ?", (username,))
-    if not user or not check_password_hash(user["password"], password):
-        flash("Please check your login details and try again.")
-        return redirect(url_for("login"))
+        users = query_db("SELECT * FROM users WHERE username = ?", (username,))
+        if users:
+            user = users[0]
+            print(user)
+        else:
+            flash("Please check your login details and try again.")
+            return render_template("login.html")
 
-    # If the above check passes, then we know the user has the right credentials
-    login_user(User(user["id"]))
-    return redirect(
-        url_for("layout")
-    )  # if user doesn't exist or password is wrong, reload the page
+        if not check_password_hash(user["password"], password):
+            flash("Please check your login details and try again.")
+            return render_template("login.html")
 
+        # If the above check passes, then we know the user has the right credentials
+        if 'id' in user:
+            session['user_id'] = user['id']
+        elif 'user_id' in user:
+            session['user_id'] = user['user_id']
+    else:
+        return render_template("login.html")
 
 # If the above check passes, then we know the user has the right credentials
 # login_user(user)
@@ -126,8 +144,13 @@ def result():
     msg = "Transaction successful"
     return render_template("result.html", msg=msg)
 
+@app.route('/home')
+@login_required
+def home():
+    return render_template('home.html')
 
-@app.route("/layout")
+
+@app.route("/layout", methods=["GET", "POST"])
 def layout():
     cur = get_db().cursor()
     cur.execute("SELECT * FROM users")
