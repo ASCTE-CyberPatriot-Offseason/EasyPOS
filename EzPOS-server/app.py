@@ -36,7 +36,7 @@ app = Flask(__name__)
 app.secret_key = "secret key"
 app.config["DATABASE"] = os.path.join(
     app.instance_path,
-    r"g:\Other computers\My Laptop\Documents\Repos\EasyPOS\EzPOS-server\identifier.sqlite",
+    r"/identifier.sqlite",
 )
 api = Api(app)
 login_manager = LoginManager()
