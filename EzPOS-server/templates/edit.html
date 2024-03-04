@@ -1,0 +1,30 @@
+{% extends "layout.html" %}
+{% block title %}
+Edit Item
+{% endblock %}
+{% block content %}
+        <h1>Edit Item Record</h1>
+        {% for row in rows %}
+        <form action="{{ url_for('editrec') }}" method="POST">
+            <h3 style="color:blue">Item ID: {{ row['item_id']}}</h3>
+            <input type="hidden" name="item_id" value="{{ row['item_id'] }}">
+            Name<br>
+            <input type="text" name="name" value="{{ row['name'] }}"/><br>
+
+            Category<br>
+            <select name="category">
+                {% for category in categories %}
+                    <option value="{{ category }}" {% if category == row['category'] %}selected{% endif %}>{{ category }}</option>
+                {% endfor %}
+            </select><br>
+
+            Price<br>
+            <input type="text" name="price" value="{{ row['price'] }}"/><br>
+
+            Active<br>
+            <input type="checkbox" name="active" {% if row['active'] %}checked{% endif %} /><br>
+
+            <input type="submit" value="Submit" /><br>
+        </form>
+        {% endfor %}
+{% endblock %}

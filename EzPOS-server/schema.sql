@@ -1,66 +1,72 @@
-CREATE TABLE menu_items (
-  item_id INT AUTO_INCREMENT PRIMARY KEY,
-  name VARCHAR(255) NOT NULL,
+CREATE TABLE IF NOT EXISTS menu_items (
+  item_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
   description TEXT,
-  category_id INT NOT NULL,
-  price DECIMAL(10,2) NOT NULL,
-  image_url VARCHAR(255),
-  active TINYINT(1) DEFAULT 1,
-  CONSTRAINT fk_category FOREIGN KEY (category_id) REFERENCES categories(category_id)
+  category_id INTEGER NOT NULL,
+  price REAL NOT NULL,
+  image_url TEXT,
+  active INTEGER DEFAULT 1,
+  FOREIGN KEY (category_id) REFERENCES categories(category_id)
 );
 
-CREATE TABLE categories (
-  category_id INT AUTO_INCREMENT PRIMARY KEY,
-  name VARCHAR(255) NOT NULL,
+CREATE TABLE IF NOT EXISTS categories (
+  category_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
   description TEXT,
-  active TINYINT(1) DEFAULT 1
+  active INTEGER DEFAULT 1
 );
 
-CREATE TABLE ingredients (
-  ingredient_id INT AUTO_INCREMENT PRIMARY KEY,
-  name VARCHAR(255) NOT NULL,
-  unit_type VARCHAR(255) NOT NULL,
-  unit_price DECIMAL(10,2) NOT NULL,
-  active TINYINT(1) DEFAULT 1
+CREATE TABLE IF NOT EXISTS ingredients (
+  ingredient_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  unit_type TEXT NOT NULL,
+  unit_price REAL NOT NULL,
+  active INTEGER DEFAULT 1
 );
 
-CREATE TABLE item_ingredients (
-  item_id INT NOT NULL,
-  ingredient_id INT NOT NULL,
-  quantity DECIMAL(10,2) NOT NULL,
+CREATE TABLE IF NOT EXISTS item_ingredients (
+  item_id INTEGER NOT NULL,
+  ingredient_id INTEGER NOT NULL,
+  quantity REAL NOT NULL,
   PRIMARY KEY (item_id, ingredient_id),
-  CONSTRAINT fk_item FOREIGN KEY (item_id) REFERENCES menu_items(item_id),
-  CONSTRAINT fk_ingredient FOREIGN KEY (ingredient_id) REFERENCES ingredients(ingredient_id)
+  FOREIGN KEY (item_id) REFERENCES menu_items(item_id),
+  FOREIGN KEY (ingredient_id) REFERENCES ingredients(ingredient_id)
 );
 
-CREATE TABLE orders (
-  order_id INT AUTO_INCREMENT PRIMARY KEY,
-  customer_id INT,
-  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  total_amount DECIMAL(10,2) NOT NULL,
-  status ENUM('pending', 'processing', 'completed', 'cancelled') DEFAULT 'pending'
+CREATE TABLE IF NOT EXISTS orders (
+  order_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  customer_id INTEGER,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  total_amount REAL NOT NULL,
+  status TEXT DEFAULT 'pending'
 );
 
-CREATE TABLE order_items (
-  order_id INT NOT NULL,
-  item_id INT NOT NULL,
-  quantity INT NOT NULL,
-  price DECIMAL(10,2) NOT NULL,
+CREATE TABLE IF NOT EXISTS order_items (
+  order_id INTEGER NOT NULL,
+  item_id INTEGER NOT NULL,
+  quantity INTEGER NOT NULL,
+  price REAL NOT NULL,
   PRIMARY KEY (order_id, item_id),
-  CONSTRAINT fk_order FOREIGN KEY (order_id) REFERENCES orders(order_id),
-  CONSTRAINT fk_item_again FOREIGN KEY (item_id) REFERENCES menu_items(item_id)
+  FOREIGN KEY (order_id) REFERENCES orders(order_id),
+  FOREIGN KEY (item_id) REFERENCES menu_items(item_id)
 );
 
-CREATE TABLE inventory (
-  ingredient_id INT NOT NULL,
-  quantity DECIMAL(10,2) NOT NULL,
-  reorder_point DECIMAL(10,2) NOT NULL,
-  CONSTRAINT fk_ingredient_inventory FOREIGN KEY (ingredient_id) REFERENCES ingredients(ingredient_id)
+CREATE TABLE IF NOT EXISTS inventory (
+  ingredient_id INTEGER NOT NULL,
+  quantity REAL NOT NULL,
+  reorder_point REAL NOT NULL,
+  FOREIGN KEY (ingredient_id) REFERENCES ingredients(ingredient_id)
 );
 
-CREATE TABLE users (
-  user_id INT AUTO_INCREMENT PRIMARY KEY,
-  username VARCHAR(255) NOT NULL UNIQUE,
-  password VARCHAR(255) NOT NULL,
-  role ENUM('admin', 'cashier', 'manager') DEFAULT 'cashier'
+CREATE TABLE IF NOT EXISTS users (
+  user_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  username TEXT NOT NULL UNIQUE,
+  password TEXT NOT NULL,
+  role TEXT DEFAULT 'cashier'
 );
+
+CREATE TABLE IF NOT EXISTS flags (
+  flag_name TEXT PRIMARY KEY,
+  stat TEXT NOT NULL
+);
+INSERT INTO flags (flag_name, stat) VALUES ('first_start', 'true');

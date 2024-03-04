@@ -5,8 +5,7 @@ import sqlite3
 
 # Initialise the flask class and the API libarary
 # Always include the following two lines of code
-app = Flask(__name__)
-api = Api(app)
+
 
 rms = {
     "restaurant": {
@@ -74,3 +73,13 @@ class Menu(Resource):
 
 api.add_resource(Restaurant, "/restaurant")
 api.add_resource(Menu, "/menu/<item>")
+
+
+def insert_order(status):
+    valid_statuses = ["pending", "processing", "completed", "cancelled"]
+    if status not in valid_statuses:
+        raise ValueError(f"Invalid status '{status}'. Must be one of {valid_statuses}.")
+
+    db = get_db()
+    db.execute("INSERT INTO orders (status) VALUES (?)", (status,))
+    db.commit()
