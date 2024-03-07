@@ -1,0 +1,26 @@
+{% extends "layout.html" %}
+{% block title %}
+Add New Item
+{% endblock %}
+{% block content %}
+    </h1>Please Add the New Item Information:</h1>
+            <form action="{{ url_for('enternew') }}" method="POST">
+                Name<br>
+                <input type="text" name="name"/><br>
+
+                Category<br>
+                <select name="category">
+                    {% for category in categories %}
+                        <option value="{{ category }}">{{ category }}</option>
+                    {% endfor %}
+                </select><br>
+
+                Price<br>
+                <input type="text" name="price" /><br>
+
+                Active<br>
+                <input type="checkbox" name="active" /><br>
+
+                <input type="submit" value="Submit" /><br>
+            </form>
+{% endblock %}

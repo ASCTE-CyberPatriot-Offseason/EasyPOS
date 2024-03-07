@@ -8,6 +8,7 @@ from flask import (
     request,
     flash,
     redirect,
+    session,
     url_for,
 )
 from flask_restful import Api
@@ -20,6 +21,7 @@ import os
 DATABASE = "identifier.sqlite"
 app = Flask(__name__)
 app.secret_key = "secret key"
+app.instance_path = os.path.join(app.root_path, "instance")
 os.makedirs(app.instance_path, exist_ok=True)
 app.config["DATABASE"] = os.path.join(
     app.instance_path,
@@ -49,7 +51,7 @@ def close_db(e=None):
 def index():
     first_start = query_db("SELECT stat FROM flags WHERE flag_name = 'first_start'", one=True)
     if first_start and first_start['stat'] == 'true':
-        return redirect(url_for("register_post"))
+        return redirect(url_for("user_register_post"))
     else:
         return redirect(url_for("login_post"))
 
@@ -59,12 +61,15 @@ class User(UserMixin):
         self.id = id
 
     def get_id(self):
-        return unicode(self.id)
+        return str(self.id)  # unicode is not needed in Python 3
 
-#PRIORITY Add error handling for duplicate usernames
-@app.route("/register", methods=["GET", "POST"])
-def register_post():
-    # Check if the app has been started for the first time
+    @property
+    def is_active(self):
+        # This should return True unless the user has been deactivated
+        return True
+
+@app.route("/user_register", methods=["GET", "POST"])
+def user_register_post():
     first_start = query_db("SELECT stat FROM flags WHERE flag_name = 'first_start'", one=True)
     if first_start and first_start['stat'] == 'true':
         if request.method == "POST":
@@ -72,37 +77,24 @@ def register_post():
             password = request.form.get("password")
             hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
             db = get_db()
-            db.execute("INSERT INTO users (username, password) VALUES (?, ?)", (username, hashed_password))
-            # Store the username and hashed_password in the database
-            # ...
 
-            # Set the 'first_start' flag to 'false'
-            # get_db().execute("UPDATE flags SET stat = 'false' WHERE flag_name = 'first_start'")
-            get_db().commit()
+            user_exists = db.execute("SELECT 1 FROM users WHERE username = ?", (username,)).fetchone() is not None
 
-            return redirect(url_for("login_post"))
-    else:
-        # If the app has been started before, check if the user is an admin or manager
-        user = query_db("SELECT * FROM users WHERE id = ?", (current_user.id,), one=True)
-        if user and (user['role'] == 'admin' or user['role'] == 'manager'):
-            if request.method == "POST":
-                username = request.form.get("username")
-                password = request.form.get("password")
-                hashed_password = generate_password_hash(password, method='sha256')
-
-                # Store the username and hashed_password in the database
-                # ...
-
+            if user_exists:
+                flash("User already exists")
+                return render_template("user_register.html")
+            else:
+                db.execute("INSERT INTO users (username, password, role) VALUES (?, ?, ?)", (username, hashed_password, 'admin'))
+                db.commit()
                 return redirect(url_for("login_post"))
-        else:
-            # If the user is not an admin or manager, redirect them to the login page
-            return redirect(url_for("login_post"))
+    else:
+        return redirect(url_for("login_post"))
 
-    return render_template("register.html")
+    return render_template("user_register.html")
 
 @login_manager.user_loader
 def load_user(user_id):
-    user = query_db("SELECT * FROM users WHERE id = ?", (user_id,), one=True)
+    user = query_db("SELECT * FROM users WHERE user_id = ?", (user_id,), one=True)
     if user:
         return User(user_id)
     return None
@@ -116,31 +108,25 @@ def login_post():
         users = query_db("SELECT * FROM users WHERE username = ?", (username,))
         if users:
             user = users[0]
-            print(users[0])
         else:
-            print("Incorrect username/password")
             flash("Please check your login details and try again.")
             return render_template("login.html")
 
-        if not check_password_hash(user["password"], password):
-            print("Password is incorrect")
+        user_dict = dict(user)
+        if user_dict.get("password") is not None and user_dict["password"] is not None and not check_password_hash(user_dict["password"], password):
             flash("Please check your login details and try again.")
             return render_template("login.html")
 
         # If the above check passes, then we know the user has the right credentials
-        if 'id' in user:
-            session['user_id'] = user['id']
-            print('id')
-        elif 'user_id' in user:
-            print('user_id')
-            session['user_id'] = user['user_id']
+        if 'user_id' in user_dict:
+            session['user_id'] = user_dict['user_id']
+
+        user = User(user_dict['user_id'])  # Create User object here
+        login_user(user)    
     else:
-        print("User not found")
         return render_template("login.html")
 
-# If the above check passes, then we know the user has the right credentials
-# login_user(user)
-# return redirect(url_for('dashboard'))
+    return redirect(url_for('home'))
 
 
 @app.route("/result")
@@ -154,6 +140,25 @@ def result():
 def home():
     return render_template('home.html')
 
+@app.route('/enternew')
+@login_required
+def enternew():
+    return render_template('enternew.html', categories=categories)  # Add the "categories" variable to the render_template function
+
+@app.route('/new_category', methods=['GET', 'POST'])  # Add a new route for creating a new category
+@login_required
+def new_category():
+    if request.method == 'POST':
+        category_name = request.form.get('category_name')
+        # Code to save the new category to the database
+        flash('New category created successfully')
+        return redirect(url_for('enternew'))
+    return render_template('new_category.html')  # Create a new template for creating a new category
+
+@app.route('/list')
+def list():
+    menu_items = query_db("SELECT * FROM menu_items")
+    return render_template('list.html', menu_items=menu_items)
 
 @app.route("/layout", methods=["GET", "POST"])
 def layout():
